@@ -120,7 +120,10 @@ void Clustering::clusterConfidentIndices()
         //TODO: Take the maximum confidence as the result confidence.
     }
 
-
+    delete []distances;
+    distances = NULL;
+    delete []clusterIndices;
+    clusterIndices = NULL;
 }
 
 void Clustering::cluster(float *distances, int *clusterIndices)
@@ -258,6 +261,9 @@ void Clustering::cluster(float *distances, int *clusterIndices)
     }
 
     detectionResult->numClusters = numClusters;
+
+    delete []distUsed;
+    distUsed = NULL;
 }
 
 } /* namespace tld */

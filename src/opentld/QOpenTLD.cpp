@@ -53,6 +53,8 @@ int main(int argc, char **argv)
 
     Config config(*settings);
     config.configure(main);
+    delete settings;
+    settings = NULL;
 
     srand(main->seed);
 
@@ -66,6 +68,9 @@ int main(int argc, char **argv)
     main->doWork();
 
     delete main;
+    main = NULL;
+    delete gui;
+    gui = NULL;
 
     return EXIT_SUCCESS;
 }

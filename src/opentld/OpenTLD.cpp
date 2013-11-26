@@ -60,6 +60,9 @@ int main(int argc, char **argv)
     main->doWork();
 
     delete main;
+    main = NULL;
+    delete gui;
+    gui = NULL;
 
     return EXIT_SUCCESS;
 }
