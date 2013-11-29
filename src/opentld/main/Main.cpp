@@ -280,7 +280,7 @@ void Main::doWork()
             }
         }
 
-        else
+        if(reuseFrameOnce)
         {
             reuseFrameOnce = false;
         }
