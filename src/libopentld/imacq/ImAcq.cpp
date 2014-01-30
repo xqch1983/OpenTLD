@@ -24,6 +24,21 @@
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
 
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32)
+#include <windows.h>
+#else
+#include <unistd.h>
+#endif
+
+static void msleep(int milliseconds)
+{
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32)
+    Sleep(milliseconds);
+#else
+    usleep(static_cast<useconds_t>(milliseconds)*1000);
+#endif
+}
+
 ImAcq *imAcqAlloc()
 {
     ImAcq *imAcq = (ImAcq *)malloc(sizeof(ImAcq));
@@ -190,8 +205,22 @@ IplImage *imAcqGrab(CvCapture *capture)
 
     if(frame == NULL)
     {
-        printf("Error: Unable to grab image from video\n");
-        return NULL;
+        // Sometimes the camera driver needs some time to start
+        // sleep 100ms and try again
+        for(int i = 0; i < 5; ++i)
+        {
+            printf("Error: Unable to grab image... retry\n");
+            msleep(100);
+            frame = cvQueryFrame(capture);
+            if(frame != NULL)
+            {
+                break;
+            }
+        }
+        if(frame == NULL)
+        {
+            exit(-1);
+        }
     }
 
     return cvCloneImage(frame);

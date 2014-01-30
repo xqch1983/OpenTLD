@@ -120,9 +120,6 @@ Navigate with the terminal to the build directory
 * `brew install opencv`
 * `cmake` build the project
 
-_Note_: You can't use OpenTLD with the OpenCV version 2.4.6.x because of a camera capture bug
-in OpenCV. OpenCV 2.4.7.x should work.
-
 # Debian package
 * Navigate with the terminal into the root dictionary of OpenTLD (OpenTLD/)
 * Type `debuild -us -uc`
