@@ -104,6 +104,9 @@ Navigate to the binary directory and build the solutions you want (You have to c
 * `opentld` build the project
 * `INSTALL` install the project
 
+_Note_: `vcomp.lib` is necessary when you try to compile it with OpenMP support and the
+Express versions of MSVC. This file is included in the Windows Server SDK.
+
 ### Linux (make)
 Navigate with the terminal to the build directory
 * `make` build the project
@@ -116,6 +119,9 @@ Navigate with the terminal to the build directory
 * `brew install cmake`
 * `brew install opencv`
 * `cmake` build the project
+
+_Note_: You can't use OpenTLD with the OpenCV version 2.4.6.x because of a camera capture bug
+in OpenCV. OpenCV 2.4.7.x should work.
 
 # Debian package
 * Navigate with the terminal into the root dictionary of OpenTLD (OpenTLD/)
