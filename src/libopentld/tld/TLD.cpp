@@ -358,7 +358,7 @@ void TLD::learn()
 
         if(overlap[i] < 0.2)
         {
-            if(!detectorCascade->ensembleClassifier->enabled || detectionResult->posteriors[i] > 0.1)   //TODO: Shouldn't this read as 0.5?
+            if(!detectorCascade->ensembleClassifier->enabled || detectionResult->posteriors[i] > 0.5)   //Should be 0.5 according to the paper
             {
                 negativeIndices.push_back(i);
             }
