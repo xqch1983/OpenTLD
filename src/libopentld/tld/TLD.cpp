@@ -106,6 +106,13 @@ void TLD::storeCurrentData()
         prevBB->width = currBB->width;
         prevBB->height = currBB->height;
     }
+    else
+    {
+        prevBB->x = 0;
+        prevBB->y = 0;
+        prevBB->width = 0;
+        prevBB->height = 0;
+    }
 
     detectorCascade->cleanPreviousData(); //Reset detector results
     medianFlowTracker->cleanPreviousData();
