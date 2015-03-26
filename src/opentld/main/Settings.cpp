@@ -52,7 +52,7 @@ Settings::Settings() :
     m_lastFrame(0),
     m_minScale(-10),
     m_maxScale(10),
-    m_numFeatures(10),
+    m_numFeatures(13),
     m_numTrees(10),
     m_thetaP(0.65),
     m_thetaN(0.5),
