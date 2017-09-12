@@ -499,7 +499,7 @@ namespace tld
 
 		float *overlap = new float[detectorCascade->numWindows];
 		//   double tic = cvGetTickCount();
-#if cloverlap
+#if clOverlap
 		cltldOverlapRect_self(detectorCascade->windows, detectorCascade->numWindows, currBB, overlap);
 #else
 		tldOverlapRect(detectorCascade->windows, detectorCascade->numWindows, currBB, overlap);
@@ -626,7 +626,7 @@ namespace tld
 #if PrintTime_overlap
 		double tic = cvGetTickCount();
 #endif
-#if cloverlap
+#if clOverlap
 		cltldOverlapRect(detectorCascade->windows, detectorCascade->numWindows, currBB, overlap);
 #else 
 		tldOverlapRect(detectorCascade->windows, detectorCascade->numWindows, currBB, overlap);

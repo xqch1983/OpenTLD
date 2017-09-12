@@ -51,7 +51,7 @@ void Main::doWork()
 		trajectory.init(trajectoryLength);
 	}
 
-	if (selectManually = 1)
+	if (selectManually)
 	{
 
 		CvRect box;

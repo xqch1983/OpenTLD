@@ -633,10 +633,13 @@ namespace tld
 		t_sqsum.release();
 		clReleaseMemObject(tsumdata);
 		clReleaseMemObject(tsqsumdata);
-		/*******  ******/
-		/*End Integral */
-		/******  *******/
+/*
+ * End Integral  
+ */
 
+/* 
+ * Begain ensemble filter or Posterior  
+ */
 
 		if (!enabled) return true;
 		int tld_window_offset_size = TLD_WINDOW_OFFSET_SIZE;
@@ -703,6 +706,9 @@ namespace tld
 		for (int i = 0; i < 6; i++)
 			status = clReleaseEvent(events[i]);	//cout << "o" << endl;
 
+/* 
+*  End ensemble filter or Posterior
+*/
 
 		clReleaseMemObject(oclbuffWindowsOffset);
 		clReleaseMemObject(oclbufffeatureOffsets);

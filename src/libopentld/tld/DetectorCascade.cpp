@@ -506,6 +506,7 @@ namespace tld
 		//}
 
 		//printf("detectionResult[753666]=%f\n",detectionResult->posteriors[753666]);
+#ifndef clNNClassifier
 		for (int i = 0, count = 0; i < numWindows; i++)
 		{
 			//	printf("I am victor %d\n", i);
@@ -526,6 +527,13 @@ namespace tld
 			}
 
 		}
+
+#else
+			
+
+#endif	
+
+
 		//printf("confident_size %d\n\n", detectionResult->confidentIndices->size());//zhaodc
 
 		//Cluster
