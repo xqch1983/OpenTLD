@@ -638,7 +638,7 @@ namespace tld
  */
 
 /* 
- * Begain ensemble filter or Posterior  
+ * Begain variance && ensemble filter or Posterior  
  */
 
 		if (!enabled) return true;

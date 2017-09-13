@@ -366,3 +366,21 @@ kernel void integral_rows_DD(__global int4 *srcsum,__global float4 * srcsqsum,__
   		//	if(lid==0 && gid==0)
 		//		printf("sum=%d,sqsum=%f\n",sum[lid],sqsum[lid]  );
 }
+
+
+
+
+kernel void nnClassifier(
+	__global int* oclbuffWindowsOffset,
+	__global int* oclbuffII,
+	__global float* oclbuffIISqure,
+	__global float* oclbuffDetectionResultVarious,
+	__global float* oclbuffDetectionResultPosteriors,
+	const unsigned int numWindows,
+	const float minVar,
+	__global int* windowFlags)
+{
+
+
+
+}

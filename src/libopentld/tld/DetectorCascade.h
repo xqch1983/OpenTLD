@@ -93,6 +93,7 @@ namespace tld
 		cl_kernel kernel_variance;
 		cl_kernel kernel_intgegral_cols;
 		cl_kernel kernel_intgegral_rows;
+		cl_kernel kernel_nnClassifier;
 
 		int oclSetup();
 		int oclBuildKernel(const char *kernelName);

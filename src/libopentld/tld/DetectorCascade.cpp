@@ -158,6 +158,7 @@ namespace tld
 		ensembleClassifier->numFeatures = numFeatures;
 		ensembleClassifier->numTrees = numTrees;
 		nnClassifier->windows = windows;
+		nnClassifier->numWindows = numWindows;
 		clustering->windows = windows;
 		clustering->numWindows = numWindows;
 
@@ -195,6 +196,13 @@ namespace tld
 		ensembleClassifier->kernel_intgegral_rows_en = kernel_intgegral_rows;
 		//kernel_variance = clCreateKernel(program, "varianceFilter", NULL);
 
+		//nnClassifier
+		nnClassifier->platform = platform;
+		nnClassifier->devices = devices;
+		nnClassifier->context = context;
+		nnClassifier->commandQueue = commandQueue;
+		nnClassifier->program = program;
+		nnClassifier->kernel_nnClassifier = kernel_nnClassifier;
 
 
 
@@ -414,6 +422,7 @@ namespace tld
 		kernel_ensemble = clCreateKernel(program, "EnsembleClassifierFilter", NULL);
 		kernel_intgegral_cols = clCreateKernel(program, "integral_cols_DD", NULL);
 		kernel_intgegral_rows = clCreateKernel(program, "integral_rows_DD", NULL);
+		kernel_nnClassifier = clCreateKernel(program, "nnClassifier", NULL); 
 	}
 
 	void DetectorCascade::oclRelease()
@@ -506,7 +515,34 @@ namespace tld
 		//}
 
 		//printf("detectionResult[753666]=%f\n",detectionResult->posteriors[753666]);
-#ifndef clNNClassifier
+#if clNNClassifier
+		for (int i = 0, count = 0; i < numWindows; i++)
+		{
+			if (detectionResult->posteriors[i] >= 0.5f)
+			{
+				//float values;
+				//int index;
+				//bool flag;
+				NNClassifier->nnClassifyStructInstance.conf = 0.0f;
+				NNClassifier->nnClassifyStructInstance.index = i;
+				NNClassifier->nnClassifyStructInstance.flag =  false;
+				nnClassifier->candidatesToNNClassify->push_back(NNClassifier->nnClassifyStructInstance);
+
+				nnClassifier->candidatesToNNClassifyIndexArray->push_back(i);
+			}
+		}
+		
+		nnClassifier->clNNFilter(img);
+
+		//v.clear();
+		//v.shrink_to_fit();
+
+		nnClassifier->candidatesToNNClassify->clear();
+
+		nnClassifier->candidatesToNNClassifyIndexArray->clear();
+
+
+#else
 		for (int i = 0, count = 0; i < numWindows; i++)
 		{
 			//	printf("I am victor %d\n", i);
@@ -526,14 +562,13 @@ namespace tld
 
 			}
 
-		}
+	}
 
-#else
-			
 
 #endif	
 
 
+		
 		//printf("confident_size %d\n\n", detectionResult->confidentIndices->size());//zhaodc
 
 		//Cluster
