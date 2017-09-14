@@ -62,10 +62,11 @@ public:
     float thetaTP;
     DetectionResult *detectionResult;
     std::vector<NormalizedPatch>* falsePositives;
-    std::vector<NormalizedPatch>* truePositives;
-	float *clNNResultsArray;
-	std::vector<int> *candidatesToNNClassifyIndexArray;
-	std::vector <nnClassifyStruct> * candidatesToNNClassify;
+    std::vector<NormalizedPatch>* truePositives;  
+	float *pNNResultsArray;
+	float *pcandidatesToNNClassifyIndexArray;
+	std::vector<int> *candidatesToNNClassifyIndexVector;
+	std::vector <nnClassifyStruct> * candidatesToNNClassifyVector;
 
 	nnClassifyStruct  nnClassifyStructInstance;
 
@@ -91,25 +92,28 @@ public:
 	cl_context       context;
 	cl_command_queue commandQueue;
 	cl_program       program;
-	cl_mem           inputBuffer;
-	cl_mem           outputBuffer;
-	cl_kernel        variance_ensemble_kernel;
-	cl_kernel  kernel_intgegral_cols_en, kernel_intgegral_rows_en;
 
-	cl_mem  oclSrcData;
-	cl_mem  oclbuffWindows;
 
-	cl_mem oclbuffWindowsOffset;
-	cl_mem oclbufffeatureOffsets;
-	cl_mem oclbuffDetectionResultfeatureVectors;
-	cl_mem oclbuffDetectionResultPosteriors;
-	cl_mem oclbuffDetectionwindowFlags;
-	cl_mem oclbuffPosteriors;
-	cl_mem oclbuffDetectionResultVarious;
-	cl_mem oclbuffImgData;
-	cl_mem oclbuffII;
-	cl_mem oclbuffIISqure;
-	size_t local_work_size[1];
+	void VectorToArray();
+	/*
+	* class NormalizedPatch
+	* {
+	* public:
+	*	float values[TLD_PATCH_SIZE *TLD_PATCH_SIZE];
+	*	bool positive;
+	*};
+	*/
+	float *pSrcTruePostiveData; //float values[TLD_PATCH_SIZE *TLD_PATCH_SIZE]; 
+	float *pSrcFalsePostiveData;
+
+	cl_mem  oclbufferSrcData;
+	cl_mem  oclbufferWindows;
+	cl_mem  oclbuffercandidatesToNNClassifyIndexArray;
+	cl_mem 	oclbufferpNNResultsArray;
+	cl_mem oclbufferSrcTruePostiveData;  // device memory to SrcTruePostiveData
+	cl_mem oclbufferSrcFalsePostiveData; // device memory to SrcFalsePostiveData
+
+	 
 	cl_kernel        kernel_nnClassifier;
 
 

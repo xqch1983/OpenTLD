@@ -34,6 +34,9 @@ using namespace cv;
 namespace tld
 {
 
+
+
+
 	NNClassifier::NNClassifier()
 	{
 		thetaFP = .5;
@@ -41,10 +44,14 @@ namespace tld
 
 		truePositives = new vector<NormalizedPatch>();
 		falsePositives = new vector<NormalizedPatch>();
-		candidatesToNNClassify = new vector<nnClassifyStruct>(); // another method is to array 
-		candidatesToNNClassifyIndexArray = new vector<int>();
-		clNNResultsArray = NULL;
+		candidatesToNNClassifyVector = new vector<nnClassifyStruct>(); // another method is to array 
+		candidatesToNNClassifyIndexVector = new vector<int>();
+		pcandidatesToNNClassifyIndexArray = NULL;
+		pNNResultsArray = NULL;
 		kernel_nnClassifier = NULL;
+		pSrcTruePostiveData = NULL;
+		pSrcFalsePostiveData = NULL;
+		//nnClassifyStructInstance = new  nnClassifyStruct;
 	}
 
 	NNClassifier::~NNClassifier()
@@ -53,16 +60,49 @@ namespace tld
 
 		delete truePositives;
 		delete falsePositives;
-		delete clNNResultsArray;
+		delete pNNResultsArray;
+		delete pcandidatesToNNClassifyIndexArray;
 	}
 
 	void NNClassifier::release()
 	{
 		falsePositives->clear();
 		truePositives->clear();
-		candidatesToNNClassify->clear();
+		candidatesToNNClassifyVector->clear();
+		candidatesToNNClassifyIndexVector->clear();
 	}
 
+	void NNClassifier::VectorToArray()
+	{ 
+
+		int truePostiveSize = truePositives->size();
+		int falsePositiveSize = falsePositives->size();
+		
+		pSrcTruePostiveData = new float[truePostiveSize * TLD_PATCH_SIZE *TLD_PATCH_SIZE];
+		float *p = pSrcTruePostiveData;
+		float *q;
+		for (int i = 0; i < truePostiveSize; i++)
+		{
+
+			q = truePositives->at(i).values;
+			for (int j = 0; j < TLD_PATCH_SIZE *TLD_PATCH_SIZE; j++)
+				*p++ = *q++;
+
+		}
+	
+		pSrcFalsePostiveData = new float[falsePositiveSize * TLD_PATCH_SIZE *TLD_PATCH_SIZE];
+		p = pSrcTruePostiveData;
+	 	for (int i = 0; i < truePostiveSize; i++)
+		{
+
+			q = truePositives->at(i).values;
+			for (int j = 0; j < TLD_PATCH_SIZE *TLD_PATCH_SIZE; j++)
+				*p++ = *q++;
+		}
+	
+	
+	
+	}
 	float NNClassifier::ncc(float *f1, float *f2)
 	{
 		double corr = 0;
@@ -169,11 +209,22 @@ namespace tld
 
 	bool NNClassifier::clNNFilter(const cv::Mat &img) 
 	{
+		
 		cl_event events[1];
 	
 		int truePostiveSize = truePositives->size();
 		int falsePositiveSize = falsePositives->size();
-		clNNResultsArray = new float[ truePostiveSize * falsePositiveSize];
+
+		if (0 == candidatesToNNClassifyIndexVector->size())
+			return false;
+		pNNResultsArray = new float[ (truePostiveSize + falsePositiveSize)*candidatesToNNClassifyIndexVector->size()];
+		
+		pcandidatesToNNClassifyIndexArray = new float[candidatesToNNClassifyIndexVector->size()];
+		float *p = pcandidatesToNNClassifyIndexArray;
+		
+		for (int i = 0; i < candidatesToNNClassifyIndexVector->size(); i++)
+			*p++ = candidatesToNNClassifyIndexVector->at(i);
+
 		printf("..................\n");
 		printf("truePositives->size()=%d \t,falsePositives->size()=%d\n", truePositives->size(), falsePositives->size());
 		printf("..................\n");
@@ -183,63 +234,84 @@ namespace tld
 		{
 			//--return 0;
 			//++set all ccorr_max_p equale to 1.0;
-			for (int i = 0, count = 0; i < this->candidatesToNNClassify->size(); i++)
-				candidatesToNNClassify->at(i).conf = 0.0f;
+			for (int i = 0, count = 0; i < this->candidatesToNNClassifyVector->size(); i++)
+			{
+				candidatesToNNClassifyVector->at(i).conf = 0.0f;
+				candidatesToNNClassifyVector->at(i).index = i;
+				candidatesToNNClassifyVector->at(i).flag = false;
+
+			}
 			goto EndofFuction;
 		}
 		// case two
 		if (!truePositives->empty() && falsePositives->empty())
 		{
 			//++ set all ccorr_max_p equale to 1.0;
-			for (int i = 0, count = 0; i < this->candidatesToNNClassify->size(); i++)
-				candidatesToNNClassify->at(i).conf = 1.0f;
+			for (int i = 0, count = 0; i < this->candidatesToNNClassifyVector->size(); i++)
+			{
+				candidatesToNNClassifyVector->at(i).conf = 1.0f;
+				candidatesToNNClassifyVector->at(i).index = i;
+				candidatesToNNClassifyVector->at(i).flag = true;
+
+			}
+				
 			goto EndofFuction;
-
-
 		}
 		//case three
 		if (!truePositives->empty() && !falsePositives->empty())
 		{
+		 
 			int tld_window_size = TLD_WINDOW_SIZE;
-
-			oclbuffWindows = clCreateBuffer(context, CL_MEM_READ_ONLY, TLD_WINDOW_SIZE * numWindows *sizeof(int), NULL, NULL);
-
-			oclSrcData = clCreateBuffer(context, CL_MEM_READ_ONLY, (img.cols) * (img.rows) * sizeof(uchar), NULL, NULL);
-
-
-
-
-
-
-			/* copy from */
+			//VectorToArray();
+			// Begin Vector to Array 
+			pSrcTruePostiveData = new float[truePostiveSize * TLD_PATCH_SIZE *TLD_PATCH_SIZE];
+			float *p = pSrcTruePostiveData;
+			float *q;
+			for (int i = 0; i < truePostiveSize; i++)
+			{
+				q = truePositives->at(i).values;
+				for (int j = 0; j < TLD_PATCH_SIZE *TLD_PATCH_SIZE; j++)
+					*p++ = *q++;
+			}
+			pSrcFalsePostiveData = new float[falsePositiveSize * TLD_PATCH_SIZE *TLD_PATCH_SIZE];
+			p = pSrcFalsePostiveData;
+			for (int i = 0; i < truePostiveSize; i++)
+			{
+				q = falsePositives->at(i).values;
+				for (int j = 0; j < TLD_PATCH_SIZE *TLD_PATCH_SIZE; j++)
+					*p++ = *q++;
+			}
+			// End Vector to Array 
+			oclbufferWindows = clCreateBuffer(context, CL_MEM_READ_ONLY, TLD_WINDOW_SIZE * numWindows *sizeof(int), (void*) windows, NULL);
+			oclbufferSrcData     = clCreateBuffer(context, CL_MEM_READ_ONLY, (img.cols) * (img.rows) * sizeof(uchar), (void*)img.data, NULL);
+			oclbuffercandidatesToNNClassifyIndexArray = clCreateBuffer(context, CL_MEM_READ_ONLY, candidatesToNNClassifyVector->size() * sizeof(int), (void*)pcandidatesToNNClassifyIndexArray, NULL);
+			oclbufferpNNResultsArray  = clCreateBuffer(context, CL_MEM_READ_ONLY, (truePostiveSize + falsePositiveSize)*candidatesToNNClassifyIndexVector->size()* sizeof(float), (void*)pNNResultsArray, NULL);
 			
-			cl_mem windows = clCreateBuffer(context, CL_MEM_READ_ONLY, TLD_WINDOW_SIZE * numWindows *sizeof(int), NULL, NULL);
+			oclbufferSrcTruePostiveData = clCreateBuffer(context, CL_MEM_READ_ONLY, truePostiveSize * TLD_PATCH_SIZE *TLD_PATCH_SIZE* sizeof(float), (void*)pSrcTruePostiveData, NULL);
+			oclbufferSrcFalsePostiveData = clCreateBuffer(context, CL_MEM_READ_ONLY, falsePositiveSize * TLD_PATCH_SIZE *TLD_PATCH_SIZE* sizeof(float), (void*)pSrcFalsePostiveData, NULL);
 
 
 
-			cl_mem oclbuffWindowsOffset = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, (TLD_WINDOW_OFFSET_SIZE * numWindows) * sizeof(int), (void *)windowOffsets, NULL);
-			cl_mem oclbuffII = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, (img.size().width)*(img.size().height) * sizeof(int), (void *)iSumMat.data, NULL);
-			cl_mem oclbuffIISqure = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, (img.size().width)*(img.size().height) * sizeof(int), (void *)fSqreSumMat.data, NULL);
-			cl_mem oclbuffDetectionResultVarious = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, (numWindows)* sizeof(float), (void *)detectionResult->variances, NULL);
-			cl_mem oclbuffDetectionResultPosteriors = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, (numWindows)* sizeof(float), (void *)detectionResult->posteriors, NULL);
 
-			cl_mem oclbuffDetectionwindowFlags = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, (numWindows)* sizeof(int), (void *)detectionResult->windowFlags, NULL);
 
+			//
 			/*Step 8: Create kernel object */
 			/*Step 9: Sets Kernel arguments.*/
-			status = clSetKernelArg(kernel_nnClassifier, 0, sizeof(cl_mem), (void *)&oclbuffWindowsOffset);
-			status = clSetKernelArg(kernel_nnClassifier, 1, sizeof(cl_mem), (void *)&oclbuffII);
-			status = clSetKernelArg(kernel_nnClassifier, 2, sizeof(cl_mem), (void *)&oclbuffIISqure);
-			status = clSetKernelArg(kernel_nnClassifier, 3, sizeof(cl_mem), (void *)&oclbuffDetectionResultVarious);
-			status = clSetKernelArg(kernel_nnClassifier, 4, sizeof(cl_mem), (void *)&oclbuffDetectionResultPosteriors);
-			status = clSetKernelArg(kernel_nnClassifier, 5, sizeof(int), (void *)&numWindows);
-			status = clSetKernelArg(kernel_nnClassifier, 6, sizeof(float), (void *)&minVar);
-			status = clSetKernelArg(kernel_nnClassifier, 7, sizeof(cl_mem), (void*)&oclbuffDetectionwindowFlags);
+			status = clSetKernelArg(kernel_nnClassifier, 0, sizeof(cl_mem), (void *)&oclbufferSrcData);
+			status = clSetKernelArg(kernel_nnClassifier, 1, sizeof(cl_mem), (void *)&oclbufferWindows);
+			status = clSetKernelArg(kernel_nnClassifier, 2, sizeof(cl_mem), (void *)&oclbuffercandidatesToNNClassifyIndexArray);
+			status = clSetKernelArg(kernel_nnClassifier, 3, sizeof(cl_mem), (void *)&oclbufferpNNResultsArray);
+			status = clSetKernelArg(kernel_nnClassifier, 4, sizeof(int), (void *)&tld_window_size);
+			status = clSetKernelArg(kernel_nnClassifier, 5, sizeof(int), (void *)&truePostiveSize);
+			status = clSetKernelArg(kernel_nnClassifier, 6, sizeof(int), (void *)&falsePositiveSize);
+			status = clSetKernelArg(kernel_nnClassifier, 7, sizeof(cl_mem), (void *)&oclbufferSrcTruePostiveData);
+			status = clSetKernelArg(kernel_nnClassifier, 8, sizeof(cl_mem), (void *)&oclbufferSrcFalsePostiveData);
+ 
 			//status = clSetKernelArg(kernel, 5, sizeof(cl_mem), (void *)&TLD_WINDOW_OFFSET_SIZE);
 
 			/*Step 10: Running the kernel.*/
 			printf("begore opencl kernel numWindows=%d\n", numWindows);
-			size_t global_work_size[1] = { truePostiveSize*falsePositiveSize };
+			size_t global_work_size[1] = { truePostiveSize+falsePositiveSize };
 			size_t local_work_size[1] = { 256 };
 			status = clEnqueueNDRangeKernel(commandQueue, kernel_nnClassifier, 1, NULL, global_work_size, NULL, 0, NULL, &events[0]);
 			if (status != CL_SUCCESS)
@@ -267,16 +339,22 @@ namespace tld
 			//status = clEnqueueReadBuffer(commandQueue, outputBuffer, CL_TRUE, 0, 12 * sizeof(char), output, 0, NULL, NULL);
 
 
+			delete pSrcTruePostiveData;
+			pSrcTruePostiveData = NULL;
+			delete pSrcFalsePostiveData;
+			pSrcFalsePostiveData = NULL;
+
+
 
 			clReleaseKernel(kernel_nnClassifier);
 			clReleaseProgram(program);
+			clReleaseMemObject(oclbufferSrcData);
+			clReleaseMemObject(oclbufferWindows);
+			clReleaseMemObject(oclbuffercandidatesToNNClassifyIndexArray);
+			clReleaseMemObject(oclbufferpNNResultsArray);
+		 
 
-			clReleaseMemObject(oclbuffWindowsOffset);
-			clReleaseMemObject(oclbuffII);
-			clReleaseMemObject(oclbuffIISqure);
-			clReleaseMemObject(oclbuffDetectionResultVarious);
-			clReleaseMemObject(oclbuffDetectionResultPosteriors);
-			clReleaseMemObject(oclbuffDetectionwindowFlags);
+
 			return true;
 
 

@@ -523,24 +523,34 @@ namespace tld
 				//float values;
 				//int index;
 				//bool flag;
-				NNClassifier->nnClassifyStructInstance.conf = 0.0f;
-				NNClassifier->nnClassifyStructInstance.index = i;
-				NNClassifier->nnClassifyStructInstance.flag =  false;
-				nnClassifier->candidatesToNNClassify->push_back(NNClassifier->nnClassifyStructInstance);
+				nnClassifier->nnClassifyStructInstance.conf = 0.0f;
+				nnClassifier->nnClassifyStructInstance.index = i;
+				nnClassifier->nnClassifyStructInstance.flag =  false;
+				nnClassifier->candidatesToNNClassifyVector->push_back(nnClassifier->nnClassifyStructInstance);
 
-				nnClassifier->candidatesToNNClassifyIndexArray->push_back(i);
+				nnClassifier->candidatesToNNClassifyIndexVector->push_back(i);
 			}
+
 		}
 		
 		nnClassifier->clNNFilter(img);
 
+
+
+		for (int i = 0; i < nnClassifier->candidatesToNNClassifyVector->size(); i++)
+		{
+			if (nnClassifier->candidatesToNNClassifyVector->at(i).conf  > nnClassifier->thetaTP)
+				detectionResult->confidentIndices->push_back(nnClassifier->candidatesToNNClassifyVector->at(i).index);
+		}
 		//v.clear();
 		//v.shrink_to_fit();
 
-		nnClassifier->candidatesToNNClassify->clear();
 
-		nnClassifier->candidatesToNNClassifyIndexArray->clear();
+		//·µ»Ø
+		nnClassifier->candidatesToNNClassifyIndexVector->clear();
 
+		nnClassifier->candidatesToNNClassifyVector->clear();
+		
 
 #else
 		for (int i = 0, count = 0; i < numWindows; i++)
@@ -570,6 +580,82 @@ namespace tld
 
 		
 		//printf("confident_size %d\n\n", detectionResult->confidentIndices->size());//zhaodc
+
+		//Cluster
+		clustering->clusterConfidentIndices();
+
+		detectionResult->containsValidData = true;
+	
+	EndofCldetect:
+		;
+
+}
+	void DetectorCascade::detect(const Mat &img)
+	{
+		//For every bounding box, the output is confidence, pattern, variance
+
+		detectionResult->reset();
+
+		if (!initialised)
+		{
+			return;
+		}
+
+		//Prepare components
+		foregroundDetector->nextIteration(img); //Calculates foreground
+		varianceFilter->nextIteration(img); //Calculates integral images
+		ensembleClassifier->nextIteration(img);
+
+#pragma omp parallel for
+
+		for (int i = 0; i < numWindows; i++)
+		{
+
+			int *window = &windows[TLD_WINDOW_SIZE * i];
+
+			if (foregroundDetector->isActive())
+			{
+				bool isInside = false;
+
+				for (size_t j = 0; j < detectionResult->fgList->size(); j++)
+				{
+
+					int bgBox[4];
+					tldRectToArray(detectionResult->fgList->at(j), bgBox);
+
+					if (tldIsInside(window, bgBox))  //TODO: This is inefficient and should be replaced by a quadtree
+					{
+						isInside = true;
+					}
+				}
+
+				if (!isInside)
+				{
+					detectionResult->posteriors[i] = 0;
+					continue;
+				}
+			}
+
+			if (!varianceFilter->filter(i))
+			{
+				detectionResult->posteriors[i] = 0;
+				continue;
+			}
+
+			if (!ensembleClassifier->filter(i))
+			{
+				continue;
+			}
+
+			if (!nnClassifier->filter(img, i))
+			{
+				continue;
+			}
+
+			detectionResult->confidentIndices->push_back(i);
+
+
+		}
 
 		//Cluster
 		clustering->clusterConfidentIndices();

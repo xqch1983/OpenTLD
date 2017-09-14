@@ -4,6 +4,43 @@
 
 
 
+
+kernel void nnClassifier(
+	__global uchar * img,
+	__global int* windows,
+	__global int* WindowIndexArray,
+	__global float *NNResultsArray,
+	const unsigned int tld_window_size,
+	const unsigned int truePostiveSize,
+	const unsigned int falsePositiveSize,
+	__global float * truePostiveData,
+	__global float * FalsePostiveData)
+{
+
+	int positiveID = get_global_id(0); //positiveID is one of truePostiveSize or falsePositiveSize
+	if (positiveID < truePostiveSize)
+	{
+
+		//TODO
+
+
+	}
+	// tld_window_size = 5
+	int bbox0 = windows[positiveID * 5 + 0];   //x
+	int bbox1 = windows[positiveID * 5 + 1];   // y
+	int bbox2 = windows[positiveID * 5 + 2];   // width
+	int bbox3 = windows[positiveID * 5 + 3];   //height
+	int bbox4 = windows[positiveID * 5 + 4];
+	float patchValue[225];
+	//resize(image(source(x, y, width, height), 15 * 15, patchValue);  //opencv resize function with bilinear method.
+
+	
+	
+	 
+
+}
+
+
 __kernel void EnsembleClassifierFilter(
     const int numIndices,
     const unsigned int numTrees,
@@ -370,17 +407,3 @@ kernel void integral_rows_DD(__global int4 *srcsum,__global float4 * srcsqsum,__
 
 
 
-kernel void nnClassifier(
-	__global int* oclbuffWindowsOffset,
-	__global int* oclbuffII,
-	__global float* oclbuffIISqure,
-	__global float* oclbuffDetectionResultVarious,
-	__global float* oclbuffDetectionResultPosteriors,
-	const unsigned int numWindows,
-	const float minVar,
-	__global int* windowFlags)
-{
-
-
-
-}
