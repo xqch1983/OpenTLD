@@ -2,42 +2,72 @@
 
 #pragma OPENCL EXTENSION cl_amd_printf : enable
 
+#define TLD_PATCH_SIZE 15
 
 
-
-kernel void nnClassifier(
+__kernel void nnClassifier(
 	__global uchar * img,
 	__global int* windows,
 	__global int* WindowIndexArray,
-	__global float *NNResultsArray,
+	__global float * NNResultsArray,
 	const unsigned int tld_window_size,
 	const unsigned int truePostiveSize,
 	const unsigned int falsePositiveSize,
+	const unsigned int CandidatesToNNClassifySize,
 	__global float * truePostiveData,
-	__global float * FalsePostiveData)
+	__global float * FalsePostiveData,
+	__global float * CandidatesToNNClassifyPatches)
 {
 
-	int positiveID = get_global_id(0); //positiveID is one of truePostiveSize or falsePositiveSize
-	if (positiveID < truePostiveSize)
+	int ThreadID = get_global_id(0); //ThreadID is one of truePostiveSize or falsePositiveSize
+	
+	__global  float *pSrc1, *pSrc2;
+	int size = TLD_PATCH_SIZE * TLD_PATCH_SIZE;
+	int CandidatesSize = CandidatesToNNClassifySize;
+	__global  float *conf;
+	
+	pSrc2 = CandidatesToNNClassifyPatches;  //TLD_PATCH_SIZE=15
+	conf = NNResultsArray + ThreadID *CandidatesSize ;
+	if (ThreadID < truePostiveSize && ThreadID < (truePostiveSize + truePostiveSize))
 	{
-
-		//TODO
-
-
+		pSrc1 = truePostiveData + ThreadID * size;  //TLD_PATCH_SIZE=15
+		for (int j = 0; j < CandidatesSize; j++)
+		{
+			double corr = 0;
+			double norm1 = 0;
+			double norm2 = 0;
+			for (int i = 0; i < size; i++)
+			{
+				corr += pSrc1[i] * pSrc2[CandidatesSize*j + i];
+				norm1 += pSrc1[i] * pSrc1[i];
+				norm2 += pSrc2[j*CandidatesSize + i] * pSrc2[CandidatesSize*j + i];
+			}
+			// normalization to <0,1> 	//return (corr / sqrt(norm1 * norm2) + 1) / 2.0;
+			*conf++ = (corr / sqrt(norm1 * norm2) + 1) / 2.0;
+		}
 	}
+	else if(ThreadID > truePostiveSize && ThreadID < (truePostiveSize + truePostiveSize))
+	{
+		pSrc1 = FalsePostiveData+ (ThreadID- truePostiveSize) * size;  //TLD_PATCH_SIZE=15
+		for (int j = 0; j < CandidatesSize; j++)
+		{
+			double corr = 0;
+			double norm1 = 0;
+			double norm2 = 0;
+			for (int i = 0; i < size; i++)
+			{
+				corr += pSrc1[i] * pSrc2[i];
+				norm1 += pSrc1[i] * pSrc1[i];
+				norm2 += pSrc2[i] * pSrc2[i];
+			}
+			// normalization to <0,1>  //return (corr / sqrt(norm1 * norm2) + 1) / 2.0;
+			*conf++ = (corr / sqrt(norm1 * norm2) + 1) / 2.0;
+		}
+ 	}
 	// tld_window_size = 5
-	int bbox0 = windows[positiveID * 5 + 0];   //x
-	int bbox1 = windows[positiveID * 5 + 1];   // y
-	int bbox2 = windows[positiveID * 5 + 2];   // width
-	int bbox3 = windows[positiveID * 5 + 3];   //height
-	int bbox4 = windows[positiveID * 5 + 4];
-	float patchValue[225];
+ 
 	//resize(image(source(x, y, width, height), 15 * 15, patchValue);  //opencv resize function with bilinear method.
-
 	
-	
-	 
-
 }
 
 

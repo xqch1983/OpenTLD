@@ -47,6 +47,7 @@ namespace tld
 		candidatesToNNClassifyVector = new vector<nnClassifyStruct>(); // another method is to array 
 		candidatesToNNClassifyIndexVector = new vector<int>();
 		pcandidatesToNNClassifyIndexArray = NULL;
+		pcandidatesToNNClassifyPatches = NULL;
 		pNNResultsArray = NULL;
 		kernel_nnClassifier = NULL;
 		pSrcTruePostiveData = NULL;
@@ -210,21 +211,34 @@ namespace tld
 	bool NNClassifier::clNNFilter(const cv::Mat &img) 
 	{
 		
-		cl_event events[1];
+		cl_event events[2];
 	
 		int truePostiveSize = truePositives->size();
 		int falsePositiveSize = falsePositives->size();
-
-		if (0 == candidatesToNNClassifyIndexVector->size())
-			return false;
+		int CandidatesToNNClassifySize = candidatesToNNClassifyIndexVector->size();
+		
+		pcandidatesToNNClassifyPatches = new  float [TLD_PATCH_SIZE * TLD_PATCH_SIZE *candidatesToNNClassifyIndexVector->size()];
+		float * pPatches = pcandidatesToNNClassifyPatches;
+ 
 		pNNResultsArray = new float[ (truePostiveSize + falsePositiveSize)*candidatesToNNClassifyIndexVector->size()];
+		for (int i = 0; i < (truePostiveSize + falsePositiveSize)*candidatesToNNClassifyIndexVector->size(); i++)
+			pNNResultsArray[i] = 0.0f;
 		
 		pcandidatesToNNClassifyIndexArray = new float[candidatesToNNClassifyIndexVector->size()];
-		float *p = pcandidatesToNNClassifyIndexArray;
-		
+		float *pIndexArray = pcandidatesToNNClassifyIndexArray;
+		NormalizedPatch patch;
 		for (int i = 0; i < candidatesToNNClassifyIndexVector->size(); i++)
-			*p++ = candidatesToNNClassifyIndexVector->at(i);
+		{
+			*pIndexArray++ = candidatesToNNClassifyIndexVector->at(i);
+			int *bbox = &windows[TLD_WINDOW_SIZE * i];
+			tldExtractNormalizedPatchBB(img, bbox, patch.values);
+			float *pdest = patch.values;
+			for (int j = 0; j < TLD_PATCH_SIZE*TLD_PATCH_SIZE; j++)
+			{
+				*pPatches++ = *pdest++;
 
+			}
+		}
 		printf("..................\n");
 		printf("truePositives->size()=%d \t,falsePositives->size()=%d\n", truePositives->size(), falsePositives->size());
 		printf("..................\n");
@@ -250,14 +264,17 @@ namespace tld
 			for (int i = 0, count = 0; i < this->candidatesToNNClassifyVector->size(); i++)
 			{
 				candidatesToNNClassifyVector->at(i).conf = 1.0f;
-				candidatesToNNClassifyVector->at(i).index = i;
+				candidatesToNNClassifyVector->at(i).index = candidatesToNNClassifyIndexVector->at(i);
 				candidatesToNNClassifyVector->at(i).flag = true;
 
 			}
 				
 			goto EndofFuction;
 		}
-		//case three
+		//case three 
+		//if (truePositives->empty() && !falsePositives->empty())
+
+		//case four
 		if (!truePositives->empty() && !falsePositives->empty())
 		{
 		 
@@ -281,7 +298,10 @@ namespace tld
 				for (int j = 0; j < TLD_PATCH_SIZE *TLD_PATCH_SIZE; j++)
 					*p++ = *q++;
 			}
+
+
 			// End Vector to Array 
+			oclbufferCandidatesToNNClassifyPatches = clCreateBuffer(context, CL_MEM_READ_ONLY, TLD_PATCH_SIZE * TLD_PATCH_SIZE *candidatesToNNClassifyIndexVector->size() *sizeof(int), (void*)pcandidatesToNNClassifyPatches, NULL);
 			oclbufferWindows = clCreateBuffer(context, CL_MEM_READ_ONLY, TLD_WINDOW_SIZE * numWindows *sizeof(int), (void*) windows, NULL);
 			oclbufferSrcData     = clCreateBuffer(context, CL_MEM_READ_ONLY, (img.cols) * (img.rows) * sizeof(uchar), (void*)img.data, NULL);
 			oclbuffercandidatesToNNClassifyIndexArray = clCreateBuffer(context, CL_MEM_READ_ONLY, candidatesToNNClassifyVector->size() * sizeof(int), (void*)pcandidatesToNNClassifyIndexArray, NULL);
@@ -304,8 +324,10 @@ namespace tld
 			status = clSetKernelArg(kernel_nnClassifier, 4, sizeof(int), (void *)&tld_window_size);
 			status = clSetKernelArg(kernel_nnClassifier, 5, sizeof(int), (void *)&truePostiveSize);
 			status = clSetKernelArg(kernel_nnClassifier, 6, sizeof(int), (void *)&falsePositiveSize);
-			status = clSetKernelArg(kernel_nnClassifier, 7, sizeof(cl_mem), (void *)&oclbufferSrcTruePostiveData);
-			status = clSetKernelArg(kernel_nnClassifier, 8, sizeof(cl_mem), (void *)&oclbufferSrcFalsePostiveData);
+			status = clSetKernelArg(kernel_nnClassifier, 7, sizeof(int), (void *)&falsePositiveSize);
+			status = clSetKernelArg(kernel_nnClassifier, 8, sizeof(cl_mem), (void *)&oclbufferSrcTruePostiveData);
+			status = clSetKernelArg(kernel_nnClassifier, 9, sizeof(cl_mem), (void *)&oclbufferSrcFalsePostiveData);
+			status = clSetKernelArg(kernel_nnClassifier, 10, sizeof(cl_mem), (void *)&oclbufferCandidatesToNNClassifyPatches);
  
 			//status = clSetKernelArg(kernel, 5, sizeof(cl_mem), (void *)&TLD_WINDOW_OFFSET_SIZE);
 
@@ -328,7 +350,24 @@ namespace tld
 			}
 			//cout << "o" << endl;
 
+
+			status = clEnqueueReadBuffer(commandQueue, oclbufferpNNResultsArray, CL_FALSE, 0, (truePostiveSize + falsePositiveSize)*candidatesToNNClassifyIndexVector->size()* sizeof(float), (void *)pNNResultsArray, 0, NULL, &events[0]);
+			  status = clWaitForEvents(1, &events[0]);
+			  if (status != CL_SUCCESS)
+			  {
+				  cout << "Error:NNclassify EnqueueNDRangeKernel!" << endl;
+				  //return false;
+			  }
+
+			  printf("Reading data from GPU *************************\n");
+			  for (int i = 0; i <(truePostiveSize + falsePositiveSize)*candidatesToNNClassifyIndexVector->size(); i++)
+			  
+			  	printf("detectionResult[%d] is %d\n", i, pNNResultsArray[i]);
+
+
+
 			status = clReleaseEvent(events[0]);
+			status = clReleaseEvent(events[1]);
 
 			//printf("end using GPU*************************\n");
 			//for (int i = 0; i < numWindows; i++)
@@ -343,7 +382,12 @@ namespace tld
 			pSrcTruePostiveData = NULL;
 			delete pSrcFalsePostiveData;
 			pSrcFalsePostiveData = NULL;
-
+			delete pNNResultsArray; 
+			pNNResultsArray = NULL;
+			delete pcandidatesToNNClassifyIndexArray;
+			pcandidatesToNNClassifyIndexArray = NULL;
+			delete pcandidatesToNNClassifyPatches;
+			pcandidatesToNNClassifyPatches = NULL;
 
 
 			clReleaseKernel(kernel_nnClassifier);
@@ -352,6 +396,7 @@ namespace tld
 			clReleaseMemObject(oclbufferWindows);
 			clReleaseMemObject(oclbuffercandidatesToNNClassifyIndexArray);
 			clReleaseMemObject(oclbufferpNNResultsArray);
+			clReleaseMemObject(oclbufferCandidatesToNNClassifyPatches);
 		 
 
 

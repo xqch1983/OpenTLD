@@ -532,9 +532,11 @@ namespace tld
 			}
 
 		}
-		
+		if (nnClassifier->candidatesToNNClassifyIndexVector->size()==0)
+			goto EndNNclassify;
 		nnClassifier->clNNFilter(img);
 
+	
 
 
 		for (int i = 0; i < nnClassifier->candidatesToNNClassifyVector->size(); i++)
@@ -542,8 +544,11 @@ namespace tld
 			if (nnClassifier->candidatesToNNClassifyVector->at(i).conf  > nnClassifier->thetaTP)
 				detectionResult->confidentIndices->push_back(nnClassifier->candidatesToNNClassifyVector->at(i).index);
 		}
-		//v.clear();
-		//v.shrink_to_fit();
+	
+		
+		
+		
+	
 
 
 		//·µ»Ø
@@ -582,6 +587,7 @@ namespace tld
 		//printf("confident_size %d\n\n", detectionResult->confidentIndices->size());//zhaodc
 
 		//Cluster
+	EndNNclassify:
 		clustering->clusterConfidentIndices();
 
 		detectionResult->containsValidData = true;

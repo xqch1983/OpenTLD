@@ -65,6 +65,7 @@ public:
     std::vector<NormalizedPatch>* truePositives;  
 	float *pNNResultsArray;
 	float *pcandidatesToNNClassifyIndexArray;
+	float *pcandidatesToNNClassifyPatches;
 	std::vector<int> *candidatesToNNClassifyIndexVector;
 	std::vector <nnClassifyStruct> * candidatesToNNClassifyVector;
 
@@ -112,6 +113,7 @@ public:
 	cl_mem 	oclbufferpNNResultsArray;
 	cl_mem oclbufferSrcTruePostiveData;  // device memory to SrcTruePostiveData
 	cl_mem oclbufferSrcFalsePostiveData; // device memory to SrcFalsePostiveData
+	cl_mem oclbufferCandidatesToNNClassifyPatches; // candidatest to NNClassify patches from host to devices.
 
 	 
 	cl_kernel        kernel_nnClassifier;

@@ -5,7 +5,7 @@
 #define clIntegral_m 1
 #define clIntegral_m_1 0
 #define clOverlap 0
-#define clNNClassifier  0
+#define clNNClassifier  1
 
 #define PrintTime_overlap 0
 #define PrintTime_detect 0
