@@ -219,7 +219,8 @@ namespace tld
 		
 		pcandidatesToNNClassifyPatches = new  float [TLD_PATCH_SIZE * TLD_PATCH_SIZE *candidatesToNNClassifyIndexVector->size()];
 		float * pPatches = pcandidatesToNNClassifyPatches;
- 
+		float maxPositiveValue  ;
+		float maxFalseValue;
 		pNNResultsArray = new float[ (truePostiveSize + falsePositiveSize)*candidatesToNNClassifyIndexVector->size()];
 		for (int i = 0; i < (truePostiveSize + falsePositiveSize)*candidatesToNNClassifyIndexVector->size(); i++)
 			pNNResultsArray[i] = 0.0f;
@@ -236,7 +237,6 @@ namespace tld
 			for (int j = 0; j < TLD_PATCH_SIZE*TLD_PATCH_SIZE; j++)
 			{
 				*pPatches++ = *pdest++;
-
 			}
 		}
 		printf("..................\n");
@@ -292,7 +292,7 @@ namespace tld
 			}
 			pSrcFalsePostiveData = new float[falsePositiveSize * TLD_PATCH_SIZE *TLD_PATCH_SIZE];
 			p = pSrcFalsePostiveData;
-			for (int i = 0; i < truePostiveSize; i++)
+			for (int i = 0; i < falsePositiveSize; i++)
 			{
 				q = falsePositives->at(i).values;
 				for (int j = 0; j < TLD_PATCH_SIZE *TLD_PATCH_SIZE; j++)
@@ -301,14 +301,13 @@ namespace tld
 
 
 			// End Vector to Array 
-			oclbufferCandidatesToNNClassifyPatches = clCreateBuffer(context, CL_MEM_READ_ONLY, TLD_PATCH_SIZE * TLD_PATCH_SIZE *candidatesToNNClassifyIndexVector->size() *sizeof(int), (void*)pcandidatesToNNClassifyPatches, NULL);
-			oclbufferWindows = clCreateBuffer(context, CL_MEM_READ_ONLY, TLD_WINDOW_SIZE * numWindows *sizeof(int), (void*) windows, NULL);
-			oclbufferSrcData     = clCreateBuffer(context, CL_MEM_READ_ONLY, (img.cols) * (img.rows) * sizeof(uchar), (void*)img.data, NULL);
-			oclbuffercandidatesToNNClassifyIndexArray = clCreateBuffer(context, CL_MEM_READ_ONLY, candidatesToNNClassifyVector->size() * sizeof(int), (void*)pcandidatesToNNClassifyIndexArray, NULL);
-			oclbufferpNNResultsArray  = clCreateBuffer(context, CL_MEM_READ_ONLY, (truePostiveSize + falsePositiveSize)*candidatesToNNClassifyIndexVector->size()* sizeof(float), (void*)pNNResultsArray, NULL);
-			
-			oclbufferSrcTruePostiveData = clCreateBuffer(context, CL_MEM_READ_ONLY, truePostiveSize * TLD_PATCH_SIZE *TLD_PATCH_SIZE* sizeof(float), (void*)pSrcTruePostiveData, NULL);
-			oclbufferSrcFalsePostiveData = clCreateBuffer(context, CL_MEM_READ_ONLY, falsePositiveSize * TLD_PATCH_SIZE *TLD_PATCH_SIZE* sizeof(float), (void*)pSrcFalsePostiveData, NULL);
+		//	oclbufferWindows = clCreateBuffer(context, CL_MEM_READ_ONLY, TLD_WINDOW_SIZE * numWindows *sizeof(int), (void*) windows, NULL);
+		//	oclbufferSrcData     = clCreateBuffer(context, CL_MEM_READ_ONLY, (img.cols) * (img.rows) * sizeof(uchar), (void*)img.data, NULL);
+		//	oclbuffercandidatesToNNClassifyIndexArray = clCreateBuffer(context, CL_MEM_READ_ONLY, candidatesToNNClassifyVector->size() * sizeof(int), (void*)pcandidatesToNNClassifyIndexArray, NULL);
+			oclbufferpNNResultsArray  = clCreateBuffer(context, CL_MEM_READ_WRITE |CL_MEM_USE_HOST_PTR, (truePostiveSize + falsePositiveSize)*candidatesToNNClassifyIndexVector->size()* sizeof(float), (void*)pNNResultsArray, NULL);
+			oclbufferSrcTruePostiveData = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, truePostiveSize * TLD_PATCH_SIZE *TLD_PATCH_SIZE* sizeof(float), (void*)pSrcTruePostiveData, NULL);
+			oclbufferSrcFalsePostiveData = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, falsePositiveSize * TLD_PATCH_SIZE *TLD_PATCH_SIZE* sizeof(float), (void*)pSrcFalsePostiveData, NULL);
+			oclbufferCandidatesToNNClassifyPatches = clCreateBuffer(context, CL_MEM_READ_WRITE| CL_MEM_USE_HOST_PTR, TLD_PATCH_SIZE * TLD_PATCH_SIZE *candidatesToNNClassifyIndexVector->size() *sizeof(int), (void*)pcandidatesToNNClassifyPatches, NULL);
 
 
 
@@ -317,17 +316,17 @@ namespace tld
 			//
 			/*Step 8: Create kernel object */
 			/*Step 9: Sets Kernel arguments.*/
-			status = clSetKernelArg(kernel_nnClassifier, 0, sizeof(cl_mem), (void *)&oclbufferSrcData);
-			status = clSetKernelArg(kernel_nnClassifier, 1, sizeof(cl_mem), (void *)&oclbufferWindows);
-			status = clSetKernelArg(kernel_nnClassifier, 2, sizeof(cl_mem), (void *)&oclbuffercandidatesToNNClassifyIndexArray);
-			status = clSetKernelArg(kernel_nnClassifier, 3, sizeof(cl_mem), (void *)&oclbufferpNNResultsArray);
-			status = clSetKernelArg(kernel_nnClassifier, 4, sizeof(int), (void *)&tld_window_size);
-			status = clSetKernelArg(kernel_nnClassifier, 5, sizeof(int), (void *)&truePostiveSize);
-			status = clSetKernelArg(kernel_nnClassifier, 6, sizeof(int), (void *)&falsePositiveSize);
-			status = clSetKernelArg(kernel_nnClassifier, 7, sizeof(int), (void *)&falsePositiveSize);
-			status = clSetKernelArg(kernel_nnClassifier, 8, sizeof(cl_mem), (void *)&oclbufferSrcTruePostiveData);
-			status = clSetKernelArg(kernel_nnClassifier, 9, sizeof(cl_mem), (void *)&oclbufferSrcFalsePostiveData);
-			status = clSetKernelArg(kernel_nnClassifier, 10, sizeof(cl_mem), (void *)&oclbufferCandidatesToNNClassifyPatches);
+			//status = clSetKernelArg(kernel_nnClassifier, 0, sizeof(cl_mem), (void *)&oclbufferSrcData);
+			//status = clSetKernelArg(kernel_nnClassifier, 1, sizeof(cl_mem), (void *)&oclbufferWindows);
+			//status = clSetKernelArg(kernel_nnClassifier, 2, sizeof(cl_mem), (void *)&oclbuffercandidatesToNNClassifyIndexArray);
+			status = clSetKernelArg(kernel_nnClassifier, 0, sizeof(cl_mem), (void *)&oclbufferpNNResultsArray);
+			//status = clSetKernelArg(kernel_nnClassifier, 4, sizeof(int), (void *)&tld_window_size);
+			status = clSetKernelArg(kernel_nnClassifier, 1, sizeof(int), (void *)&truePostiveSize);
+			status = clSetKernelArg(kernel_nnClassifier, 2, sizeof(int), (void *)&falsePositiveSize);
+			status = clSetKernelArg(kernel_nnClassifier, 3, sizeof(int), (void *)&CandidatesToNNClassifySize);
+			status = clSetKernelArg(kernel_nnClassifier, 4, sizeof(cl_mem), (void *)&oclbufferSrcTruePostiveData);
+			status = clSetKernelArg(kernel_nnClassifier, 5, sizeof(cl_mem), (void *)&oclbufferSrcFalsePostiveData);
+			status = clSetKernelArg(kernel_nnClassifier, 6, sizeof(cl_mem), (void *)&oclbufferCandidatesToNNClassifyPatches);
  
 			//status = clSetKernelArg(kernel, 5, sizeof(cl_mem), (void *)&TLD_WINDOW_OFFSET_SIZE);
 
@@ -360,14 +359,47 @@ namespace tld
 			  }
 
 			  printf("Reading data from GPU *************************\n");
-			  for (int i = 0; i <(truePostiveSize + falsePositiveSize)*candidatesToNNClassifyIndexVector->size(); i++)
+			  for (int i = 0; i < (truePostiveSize + falsePositiveSize)*candidatesToNNClassifyIndexVector->size(); i++)
+			  {
+				  printf("candidatesToNNClassifyIndexVector->size()=%d£¬ detectionResult[%d] is %f\n", candidatesToNNClassifyIndexVector->size(),i, pNNResultsArray[i]);
+
+
+			  }
 			  
-			  	printf("detectionResult[%d] is %d\n", i, pNNResultsArray[i]);
+			  for (int i = 0; i < candidatesToNNClassifyIndexVector->size();i++)
+			  {
+				   maxPositiveValue = pNNResultsArray[i];
+				   maxFalseValue = pNNResultsArray[i+ truePostiveSize*candidatesToNNClassifyIndexVector->size()];
+				 for (int j = 1; j < truePostiveSize; j++)
+				 {
+					 if ( maxPositiveValue < pNNResultsArray[j*candidatesToNNClassifyIndexVector->size()])
+						 maxPositiveValue = pNNResultsArray[j*candidatesToNNClassifyIndexVector->size()];
+
+				 }
+				 for (int j = truePostiveSize; j < truePostiveSize+falsePositiveSize; j++)
+				 {
+					 if (maxFalseValue < pNNResultsArray[j*candidatesToNNClassifyIndexVector->size()])
+						 maxFalseValue = pNNResultsArray[j*candidatesToNNClassifyIndexVector->size()];
+
+				 }
+				 float dN = 1 - maxFalseValue;
+				 float dP = 1 - maxPositiveValue;
+
+				 float conf = dN / (dN + dP);
+				// if (conf > thetaTP)
+				 //{
+				//	 return false;
+				 //}
+				     candidatesToNNClassifyVector->at(i).conf = conf;
+					 candidatesToNNClassifyVector->at(i).index = candidatesToNNClassifyIndexVector->at(i);
+					 candidatesToNNClassifyVector->at(i).flag = true;
+
+				 }
 
 
 
-			status = clReleaseEvent(events[0]);
-			status = clReleaseEvent(events[1]);
+			//status = clReleaseEvent(events[0]);
+			//status = clReleaseEvent(events[1]);
 
 			//printf("end using GPU*************************\n");
 			//for (int i = 0; i < numWindows; i++)
@@ -390,11 +422,11 @@ namespace tld
 			pcandidatesToNNClassifyPatches = NULL;
 
 
-			clReleaseKernel(kernel_nnClassifier);
-			clReleaseProgram(program);
-			clReleaseMemObject(oclbufferSrcData);
-			clReleaseMemObject(oclbufferWindows);
-			clReleaseMemObject(oclbuffercandidatesToNNClassifyIndexArray);
+	//		clReleaseKernel(kernel_nnClassifier);
+	//		clReleaseProgram(program);
+	//		clReleaseMemObject(oclbufferSrcData);
+		//	clReleaseMemObject(oclbufferWindows);
+	//		clReleaseMemObject(oclbuffercandidatesToNNClassifyIndexArray);
 			clReleaseMemObject(oclbufferpNNResultsArray);
 			clReleaseMemObject(oclbufferCandidatesToNNClassifyPatches);
 		 

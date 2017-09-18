@@ -66,14 +66,14 @@ void Main::doWork()
 			initialBB = new int[4];
 		}
 
-		//initialBB[0] = box.x;
-		//initialBB[1] = box.y;
-		//initialBB[2] = box.width;
-		//initialBB[3] = box.height;
-		initialBB[0] = 650;
-		initialBB[1] = 550;
-		initialBB[2] = 300;
-		initialBB[3] = 300;
+		initialBB[0] = box.x;
+		initialBB[1] = box.y;
+		initialBB[2] = box.width;
+		initialBB[3] = box.height;
+		//initialBB[0] = 650;
+		//initialBB[1] = 550;
+		//initialBB[2] = 300;
+		//initialBB[3] = 300;
 		//initialBB[0] = 120;
 		//initialBB[1] = 120;
 		//initialBB[2] = 110;

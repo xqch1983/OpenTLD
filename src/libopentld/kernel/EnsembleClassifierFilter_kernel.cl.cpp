@@ -6,11 +6,11 @@
 
 
 __kernel void nnClassifier(
-	__global uchar * img,
-	__global int* windows,
-	__global int* WindowIndexArray,
+	//__global uchar * img,
+	//__global int* windows,
+	//__global int* WindowIndexArray,
 	__global float * NNResultsArray,
-	const unsigned int tld_window_size,
+	//const unsigned int tld_window_size,
 	const unsigned int truePostiveSize,
 	const unsigned int falsePositiveSize,
 	const unsigned int CandidatesToNNClassifySize,
@@ -22,46 +22,60 @@ __kernel void nnClassifier(
 	int ThreadID = get_global_id(0); //ThreadID is one of truePostiveSize or falsePositiveSize
 	
 	__global  float *pSrc1, *pSrc2;
-	int size = TLD_PATCH_SIZE * TLD_PATCH_SIZE;
+	int patchSize = TLD_PATCH_SIZE * TLD_PATCH_SIZE;
 	int CandidatesSize = CandidatesToNNClassifySize;
 	__global  float *conf;
 	
 	pSrc2 = CandidatesToNNClassifyPatches;  //TLD_PATCH_SIZE=15
 	conf = NNResultsArray + ThreadID *CandidatesSize ;
-	if (ThreadID < truePostiveSize && ThreadID < (truePostiveSize + truePostiveSize))
+	if (ThreadID < truePostiveSize && ThreadID < (truePostiveSize + falsePositiveSize))
 	{
-		pSrc1 = truePostiveData + ThreadID * size;  //TLD_PATCH_SIZE=15
+		pSrc1 = truePostiveData + ThreadID * patchSize;  //TLD_PATCH_SIZE=15
 		for (int j = 0; j < CandidatesSize; j++)
 		{
 			double corr = 0;
 			double norm1 = 0;
 			double norm2 = 0;
-			for (int i = 0; i < size; i++)
+			for (int i = 0; i < patchSize; i++)
 			{
 				corr += pSrc1[i] * pSrc2[CandidatesSize*j + i];
 				norm1 += pSrc1[i] * pSrc1[i];
 				norm2 += pSrc2[j*CandidatesSize + i] * pSrc2[CandidatesSize*j + i];
 			}
 			// normalization to <0,1> 	//return (corr / sqrt(norm1 * norm2) + 1) / 2.0;
-			*conf++ = (corr / sqrt(norm1 * norm2) + 1) / 2.0;
+
+			if (norm1 == 0.0 || norm2 == 0.0)
+			{
+				norm1 = 1.0;
+				norm2 = 1.0;
+			}
+			else 
+				*conf++ = (corr / sqrt(norm1 * norm2) + 1) / 2.0;
 		}
 	}
-	else if(ThreadID > truePostiveSize && ThreadID < (truePostiveSize + truePostiveSize))
+	else if(ThreadID > truePostiveSize && ThreadID < (truePostiveSize + falsePositiveSize))
 	{
-		pSrc1 = FalsePostiveData+ (ThreadID- truePostiveSize) * size;  //TLD_PATCH_SIZE=15
+		pSrc1 = FalsePostiveData+ (ThreadID- truePostiveSize) * patchSize;  //TLD_PATCH_SIZE=15
 		for (int j = 0; j < CandidatesSize; j++)
 		{
 			double corr = 0;
 			double norm1 = 0;
 			double norm2 = 0;
-			for (int i = 0; i < size; i++)
+			for (int i = 0; i < patchSize; i++)
 			{
 				corr += pSrc1[i] * pSrc2[i];
 				norm1 += pSrc1[i] * pSrc1[i];
 				norm2 += pSrc2[i] * pSrc2[i];
 			}
 			// normalization to <0,1>  //return (corr / sqrt(norm1 * norm2) + 1) / 2.0;
+			if(norm1==0.0 || norm2 ==0.0)
+			{
+				norm1 = 1.0;
+				norm2 = 1.0;
+			}	  
+			else
 			*conf++ = (corr / sqrt(norm1 * norm2) + 1) / 2.0;
+
 		}
  	}
 	// tld_window_size = 5
