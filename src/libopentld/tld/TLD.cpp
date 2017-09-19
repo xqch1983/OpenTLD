@@ -554,7 +554,7 @@ namespace tld
 				}
 			}
 		}
-		cout << "xxxxnegativeIndices.size()xxx" << negativeIndices.size() << endl;
+		//cout << "xxxxnegativeIndices.size()xxx" << negativeIndices.size() << endl;
 		//	FILE *fp  = fopen("C:\\Users\\kevin\\Desktop\\compResult\\opentld_opencl_overlap.txt", "a+");
 		//	for (int i = 0; i < negativeIndices.size();i++)
 		//fprintf(fp, "windowIdx=%d,overlap=%f\n", i, overlap[i]);

@@ -364,15 +364,15 @@ namespace tld
 #if PrintTime_integral
 		double tic = cvGetTickCount();
 #endif
-#if    clIntegral_m_1
-		//integralImg->oclcalcIntImg(img);
-		//integralImg_squared->oclcalcIntImgSquare(img, true);
+//#if    clIntegral_m_1
+//		//integralImg->oclcalcIntImg(img);
+//		//integralImg_squared->oclcalcIntImgSquare(img, true);
+//
+//		oclMat temp;
+//		temp = img;
+//		jifentu2(temp, sum, sqsum);   //(m+1,n+1)-->(m,n)
 
-		oclMat temp;
-		temp = img;
-		jifentu2(temp, sum, sqsum);   //(m+1,n+1)-->(m,n)
-
-#elif clIntegral_m
+#if clIntegral_m
 		//integralImag_opencv( img);    // (m,n)-->(m,n)
 		integralImag_extract(img, iSumMat, fSqreSumMat);
 		//integralImag_extract(img);

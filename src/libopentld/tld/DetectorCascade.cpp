@@ -567,8 +567,8 @@ namespace tld
 			if (detectionResult->posteriors[i] >= 0.5f)
 			{
 				// printf("windowIDx= %d,count=%d\n", i, count++);
-				count++;
-				printf("Framenum = %d, I am victor %d,count=%d\n", FramNum, i, count);
+				//count++;
+				//printf("Framenum = %d, I am victor %d,count=%d\n", FramNum, i, count);
 				if (!nnClassifier->filter(img, i))
 				{
 					continue;
