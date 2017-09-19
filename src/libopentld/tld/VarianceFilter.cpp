@@ -357,9 +357,10 @@ namespace tld
 		if (!enabled) return;
 
 		release();
-
-		// integralImg = new IntegralImage<int>(img.size());
-		//integralImg_squared = new IntegralImage<float>(img.size());
+#if CPU
+		  integralImg = new IntegralImage<int>(img.size());
+		 integralImg_squared = new IntegralImage<float>(img.size());
+#endif
 #if PrintTime_integral
 		double tic = cvGetTickCount();
 #endif

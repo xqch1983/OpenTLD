@@ -42,7 +42,8 @@ add_library(libopentld
     tld/NormalizedPatch.h
     tld/TLD.h
     tld/TLDUtil.h
-    tld/VarianceFilter.h)
+    tld/VarianceFilter.h
+    tld/switch.h)
 
 target_link_libraries(libopentld ${OpenCV_LIBS} ${OPENCL_LIBRARIES})
 

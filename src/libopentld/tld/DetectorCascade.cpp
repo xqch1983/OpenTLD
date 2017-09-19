@@ -414,7 +414,7 @@ namespace tld
 			free(program_log);
 
 
-			cout << "DetectorCascade::oclBuildKernelError: Getting platforms!" << endl;
+			cout << "DetectorCascade::oclBuildKernelError:clBuildProgram  !" << endl;
 			return false;
 		}
 
@@ -534,8 +534,10 @@ namespace tld
 		}
 		if (nnClassifier->candidatesToNNClassifyIndexVector->size()==0)
 			goto EndNNclassify;
-		nnClassifier->clNNFilter(img);
 
+		 
+		nnClassifier->clNNFilter(img);
+		 
 	
 
 

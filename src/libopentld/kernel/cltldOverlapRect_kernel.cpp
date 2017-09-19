@@ -8,12 +8,10 @@ __kernel void cltldOverlapRect(
     const unsigned int bb11,
     const unsigned int bb12,
     const unsigned int bb13,
-
 	__global int* oclbuffWindowsOffset,
-    __global float* overlap ,
-
+    __global float* overlap,
 	const unsigned int TLD_WINDOW_SIZE
-    )
+	)
 {
 	int windowIdx = get_global_id(0); 
 	int min,max,sum1,sum2;
@@ -62,7 +60,8 @@ __kernel void cltldOverlapRect(
 			overlap[windowIdx] = intersection / (float)(area1 + area2 - intersection);
 		}
 		
- finished:
+	finished:
+		;
 		//if(overlap[windowIdx]!=0.0)
 		//if( windowIdx==249404 )
 		//{	

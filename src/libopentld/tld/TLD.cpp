@@ -71,17 +71,31 @@ namespace tld
 		medianFlowTracker = new MedianFlowTracker();
 
 		int tld_window_size = TLD_WINDOW_SIZE;
-		char *kernelName = "..\\..\\..\\src\\libopentld\\kernel\\cltldOverlapRect.cl";
+		char *kernelName = "..\\..\\..\\src\\libopentld\\kernel\\cltldOverlapRect_kernel.cpp";
 
 		string sourceStr;
 		status = convertToString2(kernelName, sourceStr);
+	 
 		const char *source = sourceStr.c_str();
 		size_t sourceSize[] = { strlen(source) };
 		program = clCreateProgramWithSource(context, 1, &source, sourceSize, NULL);
 
 		/*Step 6: Build program. */
 		status = clBuildProgram(program, 1, &devices[SELECTED_DEVICE_ID], NULL, NULL, NULL);
+		if (status != CL_SUCCESS)
+		{
+			size_t log_size;
+			char* program_log;
+			clGetProgramBuildInfo(program, devices[SELECTED_DEVICE_ID], CL_PROGRAM_BUILD_LOG, 0, NULL, &log_size);
+			program_log = (char*)malloc(log_size + 1);
+			clGetProgramBuildInfo(program, devices[SELECTED_DEVICE_ID], CL_PROGRAM_BUILD_LOG, log_size + 1, program_log, NULL);
+			printf("%s\n", program_log);
+			free(program_log);
 
+
+			cout << "DetectorCascade::oclBuildKernelError:clBuildProgram  !" << endl;
+			//return false;
+		}
 	}
 
 	TLD::~TLD()
@@ -380,7 +394,7 @@ namespace tld
 		status = clEnqueueNDRangeKernel(commandQueue, kernel, 1, NULL, global_work_size, local_work_size, 0, NULL, &events[0]);
 		if (status != CL_SUCCESS)
 		{
-			cout << "Error: EnqueueNDRangeKernel!" << endl;
+			cout << "Error:cltldOverlapRect_self  EnqueueNDRangeKernel!" << endl;
 			//return false;
 		}
 		status = clWaitForEvents(1, &events[0]);

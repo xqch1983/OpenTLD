@@ -6,11 +6,7 @@
 
 
 __kernel void nnClassifier(
-	//__global uchar * img,
-	//__global int* windows,
-	//__global int* WindowIndexArray,
 	__global float * NNResultsArray,
-	//const unsigned int tld_window_size,
 	const unsigned int truePostiveSize,
 	const unsigned int falsePositiveSize,
 	const unsigned int CandidatesToNNClassifySize,
