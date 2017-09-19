@@ -8,9 +8,9 @@ __kernel void cltldOverlapRect(
     const unsigned int bb11,
     const unsigned int bb12,
     const unsigned int bb13,
-	__global int* oclbuffWindowsOffset,
+    __global int* oclbuffWindowsOffset,
     __global float* overlap,
-	const unsigned int TLD_WINDOW_SIZE
+    const unsigned int TLD_WINDOW_SIZE
 	)
 {
 	int windowIdx = get_global_id(0); 
