@@ -209,7 +209,8 @@ int trackLK(IplImage *imgI, IplImage *imgJ, float ptsI[], int nPtsI,
         points[2][i].y = ptsI[2 * i + 1];
     }
 
-    //lucas kanade track
+    //lucas kanade track in modules->ocl->pyrlk.cpp
+	//void cv::ocl::PyrLKOpticalFlow::sparse(const oclMat &prevImg, const oclMat &nextImg, const oclMat &prevPts, oclMat &nextPts, oclMat &status, oclMat *err)
     cvCalcOpticalFlowPyrLK(imgI, imgJ, PYR[I], PYR[J], points[0], points[1],
                            nPtsI, cvSize(win_size_lk, win_size_lk), level, status, 0, cvTermCriteria(
                                CV_TERMCRIT_ITER | CV_TERMCRIT_EPS, 20, 0.03),

@@ -20,8 +20,7 @@ __kernel void nnClassifier(
 	__global  float *pSrc1, *pSrc2;
 	int patchSize = TLD_PATCH_SIZE * TLD_PATCH_SIZE;
 	int CandidatesSize = CandidatesToNNClassifySize;
-	__global  float *conf;
-	
+	__global  float *conf;	
 	pSrc2 = CandidatesToNNClassifyPatches;  //TLD_PATCH_SIZE=15
 	conf = NNResultsArray + ThreadID *CandidatesSize ;
 	if (ThreadID < truePostiveSize && ThreadID < (truePostiveSize + falsePositiveSize))
